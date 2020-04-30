@@ -5,8 +5,8 @@ authors = ["icodesign <leimagnet@gmail.com>"]
 edition = "2018"
 license-file = "LICENSE"
 description = "Helper methods for relaying tokio read/write stream"
-homepage = "https://github.com/icodesign/relay"
-repository = "https://github.com/icodesign/relay"
+homepage = "https://github.com/icodesign/phantom-relay"
+repository = "https://github.com/icodesign/phantom-relay"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
