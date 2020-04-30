@@ -3,6 +3,10 @@ name = "relay"
 version = "0.1.0"
 authors = ["icodesign <leimagnet@gmail.com>"]
 edition = "2018"
+license-file = "LICENSE"
+description = "Helper methods for relaying tokio read/write stream"
+homepage = "https://github.com/icodesign/relay"
+repository = "https://github.com/icodesign/relay"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
