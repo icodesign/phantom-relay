@@ -1,5 +1,79 @@
 use futures::future;
 use tokio::io::{self, AsyncRead, AsyncWrite, AsyncWriteExt};
+use std::net::SocketAddr;
+use trust_dns_resolver::proto::DnsHandle;
+use trust_dns_resolver::{ConnectionProvider, AsyncResolver};
+use tokio::net::TcpStream;
+
+#[derive(Debug, Eq, PartialEq, Clone, Hash)]
+pub enum Destination {
+    Host(String, u16),
+    Addr(SocketAddr),
+}
+
+impl Destination {
+    pub fn from_host(host: &str, port: u16) -> Destination {
+        Destination::Host(host.to_owned(), port)
+    }
+
+    pub fn from_addr(addr: SocketAddr) -> Destination {
+        Destination::Addr(addr)
+    }
+
+    pub fn port(&self) -> u16 {
+        match *self {
+            Destination::Host(_, port) => {
+                port
+            },
+            Destination::Addr(addr) => {
+                addr.port()
+            }
+        }
+    }
+
+    pub fn unwrap_addr(&self) -> SocketAddr {
+        match *self {
+            Destination::Host(_, _) => panic!("Invalid destination type"),
+            Destination::Addr(addr) => addr,
+        }
+    }
+
+    pub async fn connect<C: DnsHandle, P: ConnectionProvider<Conn = C>> (&self, resolver: &AsyncResolver<C, P>) -> io::Result<TcpStream> {
+        let remote_addr = self.resolve(resolver).await?;
+        let mut err: io::Result<TcpStream> = Err(io::Error::new(
+            io::ErrorKind::AddrNotAvailable,
+            "Resolved addr is empty",
+        ));
+        for addr in remote_addr {
+            match TcpStream::connect(addr).await {
+                Ok(socket) => {
+                    return Ok(socket);
+                },
+                Err(e) => {
+                    err = Err(e);
+                }
+            }
+        }
+        err
+    }
+
+    pub async fn resolve<C: DnsHandle, P: ConnectionProvider<Conn = C>> (&self, resolver: &AsyncResolver<C, P>) -> io::Result<Vec<SocketAddr>> {
+        match self {
+            Destination::Host(host, port) => match resolver.lookup_ip(host.as_str()).await {
+                Ok(result) => {
+                    Ok(result.iter().map(|x| SocketAddr::new(x, *port)).collect())
+                }
+                Err(_e) => Err(io::Error::new(
+                    io::ErrorKind::AddrNotAvailable,
+                    "Could't resolve host",
+                )),
+            },
+            Destination::Addr(addr) => {
+                Ok(vec![*addr])
+            },
+        }
+    }
+}
 
 pub async fn relay<'a, L, R>(l: &'a mut L, r: &'a mut R) -> io::Result<(u64, u64)>
     where

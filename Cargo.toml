@@ -13,3 +13,4 @@ repository = "https://github.com/icodesign/phantom-relay"
 [dependencies]
 tokio = { version = "0.2", features = ["io-util", "tcp"] }
 futures = "0.3"
+trust-dns-resolver = "0.19"
